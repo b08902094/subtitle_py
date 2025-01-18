@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Video with Animated Captions</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: black;
+      }
+
+      #video-container {
+        position: relative;
+        width: 80%;
+        max-width: 800px;
+      }
+
+      video {
+        width: 100%;
+        display: block;
+      }
+
+      #caption-container {
+        position: absolute;
+        bottom: 10%;
+        width: 100%;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .caption-word {
+        display: inline-block;
+        margin: 0 2px;
+        animation-duration: 1.5s;
+        animation-iteration-count: infinite;
+      }
+
+      /* アニメーション定義 */
+      .ang {
+        animation-name: shake;
+      }
+
+      .sad {
+        animation-name: fadeOutSlide;
+      }
+
+      .hap {
+        animation-name: pulse;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        25% {
+          transform: translateY(-5px);
+        }
+        75% {
+          transform: translateY(5px);
+        }
+      }
+
+      @keyframes fadeOutSlide {
+        0% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="video-container">
+      <video id="video" controls>
+        <source src="test5.mp4" type="video/mp4" />
+        お使いのブラウザは動画タグに対応していません。
+      </video>
+      <div id="caption-container"></div>
+    </div>
+
+    <script>
+      async function loadCaptions() {
+        const response = await fetch("captions.json");
+        const captions = await response.json();
+
+        const video = document.getElementById("video");
+        const captionContainer = document.getElementById("caption-container");
+
+        // 動画の再生位置に応じて字幕を切り替える
+        video.addEventListener("timeupdate", () => {
+          const currentTime = video.currentTime;
+
+          // 現在の字幕を取得
+          const activeCaptions = captions.filter(
+            (caption) =>
+              currentTime >= caption.start_time &&
+              currentTime <= caption.end_time
+          );
+
+          if (activeCaptions.length > 0) {
+            // すべての単語を一度に表示
+            captionContainer.innerHTML = activeCaptions
+              .map((caption) => {
+                const emotionClass = caption.emotionClass || "neutral"; // emotionClass が存在しない場合は 'neutral'
+                const fontSize = caption.font_size || 30; // font_size がない場合はデフォルトサイズ 30px
+
+                return caption.text
+                  .split(" ")
+                  .map(
+                    (word) => `
+                        <span class="caption-word ${emotionClass}" style="
+                            font-size: ${fontSize}px;
+                            color: ${caption.color};
+                        ">
+                            ${word}
+                        </span>
+                    `
+                  )
+                  .join(" ");
+              })
+              .join(" ");
+          } else {
+            captionContainer.innerHTML = ""; // 字幕を消す
+          }
+        });
+      }
+
+      document.addEventListener("DOMContentLoaded", loadCaptions);
+    </script>
+  </body>
+</html>
